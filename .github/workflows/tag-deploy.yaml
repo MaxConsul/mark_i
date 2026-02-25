@@ -38,6 +38,10 @@ jobs:
           fi
 
       - name: Merge tag commit into branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}  # Use your PAT
         run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git checkout ${{ env.branch }}
           git merge $GITHUB_SHA --no-ff -m "Merge tag $GITHUB_REF into ${{ env.branch }}"
           git push origin ${{ env.branch }}
