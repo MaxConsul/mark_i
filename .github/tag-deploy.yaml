@@ -1,0 +1,34 @@
+name: Deploy on Tag
+
+on:
+  push:
+    tags:
+      - 'sv*'
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+      - name: Determine branch
+        id: branch
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if [[ $TAG_NAME == sv* ]]; then
+            echo "branch=staging" >> $GITHUB_ENV
+          elif [[ $TAG_NAME == v* ]]; then
+            echo "branch=production" >> $GITHUB_ENV
+          fi
+
+      - name: Push tag to branch
+        run: |
+          git checkout ${{ env.branch }}
+          git merge --ff-only $GITHUB_SHA
+          git push origin ${{ env.branch }}
