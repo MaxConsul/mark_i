@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # ensures full history for merges
 
       - name: Set up Git
         run: |
@@ -25,10 +27,17 @@ jobs:
             echo "branch=staging" >> $GITHUB_ENV
           elif [[ $TAG_NAME == v* ]]; then
             echo "branch=production" >> $GITHUB_ENV
+
+      - name: Ensure branch exists
+        run: |
+          if ! git show-ref --verify --quiet refs/heads/${{ env.branch }}; then
+            git checkout -b ${{ env.branch }}
+            git push origin ${{ env.branch }}
+          else
+            git checkout ${{ env.branch }}
           fi
 
-      - name: Push tag to branch
+      - name: Merge tag commit into branch
         run: |
-          git checkout ${{ env.branch }}
-          git merge --ff-only $GITHUB_SHA
+          git merge $GITHUB_SHA --no-ff -m "Merge tag $GITHUB_REF into ${{ env.branch }}"
           git push origin ${{ env.branch }}
