@@ -9,6 +9,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -61,13 +63,8 @@ jobs:
       # Merge tag commit into branch
       # ----------------------------------------
       - name: Merge tag into branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           BRANCH=${{ steps.branch.outputs.branch }}
-
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-
           git checkout $BRANCH
 
           echo "Merging commit $GITHUB_SHA into $BRANCH"
