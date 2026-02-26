@@ -9,39 +9,73 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0   # ensures full history for merges
 
-      - name: Set up Git
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
+      # ----------------------------------------
+      # Determine target branch from tag
+      # ----------------------------------------
       - name: Determine branch
         id: branch
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          if [[ $TAG_NAME == sv* ]]; then
-            echo "branch=staging" >> $GITHUB_ENV
-          elif [[ $TAG_NAME == v* ]]; then
-            echo "branch=production" >> $GITHUB_ENV
+          echo "Detected tag: $TAG_NAME"
 
-      - name: Ensure branch exists
-        run: |
-          if ! git show-ref --verify --quiet refs/heads/${{ env.branch }}; then
-            git checkout -b ${{ env.branch }}
-            git push origin ${{ env.branch }}
+          if [[ "$TAG_NAME" == sv* ]]; then
+            echo "branch=staging" >> $GITHUB_OUTPUT
+          elif [[ "$TAG_NAME" == v* ]]; then
+            echo "branch=production" >> $GITHUB_OUTPUT
           else
-            git checkout ${{ env.branch }}
+            echo "Invalid tag format. Must start with 'sv' or 'v'"
+            exit 1
           fi
 
-      - name: Merge tag commit into branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}  # Use your PAT
+      # ----------------------------------------
+      # Ensure branch exists remotely
+      # ----------------------------------------
+      - name: Ensure branch exists
         run: |
+          BRANCH=${{ steps.branch.outputs.branch }}
+          echo "Target branch: $BRANCH"
+
+          git fetch origin
+
+          if git show-ref --verify --quiet refs/remotes/origin/$BRANCH; then
+            git checkout -B $BRANCH origin/$BRANCH
+          else
+            echo "Branch does not exist. Creating it."
+            git checkout -b $BRANCH
+            git push origin $BRANCH
+          fi
+
+      # ----------------------------------------
+      # Merge tag commit into branch
+      # ----------------------------------------
+      - name: Merge tag into branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          BRANCH=${{ steps.branch.outputs.branch }}
+
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-          git checkout ${{ env.branch }}
-          git merge $GITHUB_SHA --no-ff -m "Merge tag $GITHUB_REF into ${{ env.branch }}"
-          git push origin ${{ env.branch }}
+
+          git checkout $BRANCH
+
+          echo "Merging commit $GITHUB_SHA into $BRANCH"
+
+          git merge $GITHUB_SHA --no-ff --no-edit || {
+            echo "Merge conflict detected. Aborting."
+            git merge --abort
+            exit 1
+          }
+
+          git push origin $BRANCH
