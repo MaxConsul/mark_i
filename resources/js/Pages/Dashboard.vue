@@ -11,7 +11,7 @@ import { Head } from '@inertiajs/vue3';
             <h2
                 class="text-xl font-semibold leading-tight text-gray-800"
             >
-                Dashboard
+                Dashboard ng mga pogi ito
             </h2>
         </template>
 
@@ -24,6 +24,7 @@ import { Head } from '@inertiajs/vue3';
                        Test deployment max
                        Test deployment patrick
                        Test deployment jp
+                       Test deployment riel
                     </div>
                 </div>
             </div>
