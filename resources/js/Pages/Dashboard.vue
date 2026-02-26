@@ -25,6 +25,7 @@ import { Head } from '@inertiajs/vue3';
                        Test deployment patrick
                        Test deployment jp
                        Test deployment riel
+                       Samply changes on develop
                     </div>
                 </div>
             </div>
