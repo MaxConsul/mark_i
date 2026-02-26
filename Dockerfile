@@ -4,11 +4,11 @@ FROM php:8.2-fpm
 # Set working directory
 WORKDIR /var/www
 
-# Install dependecies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
-    libzip-dez \
+    libzip-dev \
     zip \
     && docker-php-ext-install pdo pdo_mysql zip
 
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copy project files
-COPY . . 
+COPY . .
 
 # Install PHP Dependencies
 RUN composer install
