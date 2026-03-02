@@ -22,6 +22,7 @@ import { Head } from '@inertiajs/vue3';
                 >
                     <div class="p-6 text-gray-900">
                        This is Homepage
+                       Testing of CI/CD
                     </div>
                 </div>
             </div>
