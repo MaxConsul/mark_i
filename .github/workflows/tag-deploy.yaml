@@ -1,78 +1,46 @@
-name: Deploy on Tag
+name: Deploy Laravel + Vite
 
 on:
   push:
-    tags:
-      - 'sv*'
-      - 'v*'
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repo
         uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0
+          node-version: '20' # adjust to your Node version
 
-      - name: Configure Git
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # adjust to your Laravel PHP version
+
+      - name: Install Dependencies
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          npm install
+          npm run build
+          composer install --no-dev --optimize-autoloader
 
-      # ----------------------------------------
-      # Determine target branch from tag
-      # ----------------------------------------
-      - name: Determine branch
-        id: branch
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          echo "Detected tag: $TAG_NAME"
-
-          if [[ "$TAG_NAME" == sv* ]]; then
-            echo "branch=staging" >> $GITHUB_OUTPUT
-          elif [[ "$TAG_NAME" == v* ]]; then
-            echo "branch=production" >> $GITHUB_OUTPUT
-          else
-            echo "Invalid tag format. Must start with 'sv' or 'v'"
-            exit 1
-          fi
-
-      # ----------------------------------------
-      # Ensure branch exists remotely
-      # ----------------------------------------
-      - name: Ensure branch exists
-        run: |
-          BRANCH=${{ steps.branch.outputs.branch }}
-          echo "Target branch: $BRANCH"
-
-          git fetch origin
-
-          if git show-ref --verify --quiet refs/remotes/origin/$BRANCH; then
-            git checkout -B $BRANCH origin/$BRANCH
-          else
-            echo "Branch does not exist. Creating it."
-            git checkout -b $BRANCH
-            git push origin $BRANCH
-          fi
-
-      # ----------------------------------------
-      # Merge tag commit into branch
-      # ----------------------------------------
-      - name: Merge tag into branch
-        run: |
-          BRANCH=${{ steps.branch.outputs.branch }}
-          git checkout $BRANCH
-
-          echo "Merging commit $GITHUB_SHA into $BRANCH"
-
-          git merge $GITHUB_SHA --no-ff --no-edit || {
-            echo "Merge conflict detected. Aborting."
-            git merge --abort
-            exit 1
-          }
-
-          git push origin $BRANCH
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}
+            git pull origin main
+            npm install
+            npm run build
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            pm2 restart all || php artisan serve --daemon
