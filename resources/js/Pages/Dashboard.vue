@@ -11,7 +11,7 @@ import { Head } from '@inertiajs/vue3';
             <h2
                 class="text-xl font-semibold leading-tight text-gray-800"
             >
-                Dashboard ng mga pogi ito
+                Dashboard
             </h2>
         </template>
 
@@ -21,10 +21,7 @@ import { Head } from '@inertiajs/vue3';
                     class="overflow-hidden bg-white shadow-sm sm:rounded-lg"
                 >
                     <div class="p-6 text-gray-900">
-                       Test deployment max
-                       Test deployment patrick
-                       Test deployment jp
-                       Test deployment riel
+                       This is Homepage
                     </div>
                 </div>
             </div>
