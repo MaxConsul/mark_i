@@ -24,6 +24,7 @@ import { Head } from '@inertiajs/vue3';
                        This is Homepage
                        Testing of CI/CD
                        Sana mag work
+                       please
                     </div>
                 </div>
             </div>
